@@ -1,0 +1,71 @@
+-- Official capstone schema for MySQL 8+.
+-- Run this file before loading data with src.database.load_tables_to_database.
+
+CREATE DATABASE IF NOT EXISTS micro_lending;
+USE micro_lending;
+
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id BIGINT NOT NULL,
+    member_id BIGINT NULL,
+    addr_state VARCHAR(50),
+    zip_code VARCHAR(10),
+    annual_inc DECIMAL(18,2),
+    annual_inc_joint DECIMAL(18,2),
+    emp_title VARCHAR(255),
+    emp_length VARCHAR(20),
+    home_ownership VARCHAR(50),
+    application_type VARCHAR(50),
+    earliest_cr_line DATE,
+    fico_range_low INT NULL,
+    fico_range_high INT NULL,
+    delinq_2yrs INT,
+    delinq_amnt DECIMAL(18,2),
+    pub_rec INT,
+    pub_rec_bankruptcies INT,
+    mort_acc INT,
+    open_acc INT,
+    total_acc INT,
+    revol_bal DECIMAL(18,2),
+    revol_util DECIMAL(8,4),
+    total_bal_ex_mort DECIMAL(18,2),
+    tot_cur_bal DECIMAL(18,2),
+    tot_coll_amt DECIMAL(18,2),
+    inq_last_6mths INT,
+    inq_last_12m INT,
+    inq_fi INT,
+    acc_now_delinq INT,
+    collections_12_mths_ex_med INT,
+    chargeoff_within_12_mths INT,
+    PRIMARY KEY (customer_id),
+    UNIQUE KEY uq_customer_member_id (member_id),
+    KEY idx_customer_state (addr_state)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS loans (
+    loan_id BIGINT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    member_id BIGINT NULL,
+    loan_amnt DECIMAL(18,2),
+    funded_amnt DECIMAL(18,2),
+    term VARCHAR(20),
+    int_rate DECIMAL(8,4),
+    installment DECIMAL(18,2),
+    grade CHAR(2),
+    sub_grade VARCHAR(10),
+    purpose VARCHAR(100),
+    title VARCHAR(255),
+    issue_d DATE,
+    loan_status VARCHAR(80),
+    dti DECIMAL(8,2),
+    verification_status VARCHAR(50),
+    initial_list_status VARCHAR(10),
+    disbursement_method VARCHAR(50),
+    application_type VARCHAR(50),
+    default_flag TINYINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (loan_id),
+    CONSTRAINT fk_loans_customer FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    KEY idx_loans_customer (customer_id),
+    KEY idx_loans_status (loan_status),
+    KEY idx_loans_grade (grade),
+    KEY idx_loans_purpose (purpose)
+) ENGINE=InnoDB;

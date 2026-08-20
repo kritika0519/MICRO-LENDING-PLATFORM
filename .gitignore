@@ -1,0 +1,21 @@
+# Local environment and secrets
+.venv/
+venv/
+.env
+*.env
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Large local datasets and generated database files
+lendingLoan zip/
+data/processed/*.csv
+data/processed/*.db
+data/eda/
+data/model_evaluation/
+
+# Local notebook/editor state
+.ipynb_checkpoints/
+.vscode/
