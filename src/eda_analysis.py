@@ -17,6 +17,16 @@ DEFAULT_CUSTOMERS_INPUT = ROOT_DIR / 'data' / 'processed' / 'customers.csv'
 DEFAULT_OUTPUT = ROOT_DIR / 'data' / 'eda'
 
 
+def ensure_processed_data() -> None:
+    """Generate processed CSVs if the raw dataset is present but the processed outputs are missing."""
+    if DEFAULT_INPUT.exists() and DEFAULT_CUSTOMERS_INPUT.exists():
+        return
+
+    from src.etl_pipeline import clean_raw_dataset
+
+    clean_raw_dataset()
+
+
 def load_eda_data(input_path: Path = DEFAULT_INPUT, sample_size: int = 100000) -> pd.DataFrame:
     """Load a bounded loan sample and join customer attributes for analysis."""
     columns = [
@@ -140,6 +150,8 @@ def main() -> None:
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--sample-size', type=int, default=100000)
     args = parser.parse_args()
+
+    ensure_processed_data()
     outputs = build_eda_outputs(load_eda_data(args.input, args.sample_size), args.output)
     for name, path in outputs.items():
         print(f'{name}: {path}')

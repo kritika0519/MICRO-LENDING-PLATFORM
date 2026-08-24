@@ -1,204 +1,231 @@
-# Micro-Lending Platform
+# Micro-Lending Risk Decision Platform
 
-This GitHub repository contains the runnable application code for the capstone. Large Lending Club data files are intentionally kept out of GitHub because the raw dataset is over 1 GB and normal GitHub files have a 100 MB limit. Download the dataset locally before running ETL or retraining the model.
+A full-stack, end-to-end lending risk assessment project built around historical Lending Club loan data. The platform estimates default risk, applies lending policy checks, and produces a loan decision with explainable reasons.
 
-## What this project does
+## Overview
 
-This project is an end-to-end loan risk assessment system built with Lending Club data.
+This project is designed to help a lender answer four key questions:
 
-A lending analyst can enter a borrower profile and a loan request. The system then:
+1. Who is the borrower?
+2. How risky is the borrower?
+3. What is the probability of default?
+4. Should the loan be approved, reviewed, or rejected?
 
-1. estimates the probability of default
-2. converts that probability into a risk score and risk band
-3. checks the borrower against lending rules
-4. returns `APPROVE`, `REVIEW`, or `REJECT`
-5. explains the reasons behind the result
+It combines:
 
-The project also includes the database, SQL analysis, ETL pipeline, machine-learning model, FastAPI service, and Streamlit form required for the capstone.
+- ETL and data cleaning
+- SQL-based portfolio analysis
+- exploratory data analysis and charts
+- feature engineering
+- machine learning for default prediction
+- eligibility screening rules
+- a decision engine
+- a FastAPI backend
+- a Streamlit front-end
 
-## Project flow
+## Problem Statement
 
-```text
-loan.csv
-  -> Python and Pandas cleaning
-  -> customers.csv and loans.csv
-  -> MySQL tables: customers and loans
-  -> SQL business analysis
-  -> feature engineering
-  -> default prediction
-  -> risk score
-  -> eligibility checks
-  -> final decision
-  -> FastAPI and Streamlit
-```
+Digital lenders need a consistent and explainable decision-support system to evaluate loan applications. Manual review alone is slow and inconsistent, while pure model output without policy checks can miss important business constraints.
 
-## Folder guide
+This project solves that by combining:
 
-- `lendingLoan zip/loan.csv` - original Lending Club dataset, downloaded locally and ignored by Git
-- `data/processed/` - cleaned customer and loan CSV files generated locally by ETL
-- `data/eda/` - EDA summaries and charts generated locally
-- `data/model_evaluation/` - model comparison and evaluation results generated locally
-- `src/etl_pipeline.py` - reads and cleans the raw CSV
-- `src/features.py` - creates lending-risk features
-- `src/train_model.py` - trains and evaluates the model
-- `src/database.py` - loads processed data into MySQL or local SQLite
-- `src/run_business_queries.py` - runs the six SQL reports
-- `src/risk_score.py` - converts probability to score and risk band
-- `src/eligibility.py` - applies lending eligibility rules
-- `src/decision_engine.py` - produces the final decision
-- `api/app.py` - FastAPI endpoints
-- `app/streamlit_app.py` - Streamlit user interface
-- `sql/schema.sql` - official MySQL schema
-- `sql/business_queries.sql` - six business analysis queries
-- `notebooks/` - EDA and feature-engineering notebooks
-- `tests/` - automated tests
+- a predictive model for default likelihood
+- human-interpretable risk scoring
+- business-rule validation for eligibility
+- final decision outputs with clear reasons
 
-## Get the dataset locally
+## Dataset Used
 
-Download the Lending Club CSV from the dataset link in the project assignment and place it here:
+The project uses the Lending Club loan dataset, which contains borrower and loan characteristics such as:
+
+- annual income
+- employment length
+- revolving utilization
+- debt-to-income ratio
+- FICO range
+- delinquency history
+- inquiry history
+- loan amount
+- loan status
+
+Official dataset source:
+
+- Kaggle: https://www.kaggle.com/datasets/adarshsng/lending-club-loan-data-csv
+
+The raw dataset is intended to be stored locally as:
 
 ```text
 lendingLoan zip/loan.csv
 ```
 
-This folder is intentionally ignored in GitHub because the file is too large for normal GitHub storage.
+In this workspace, the local working copy is also available under:
 
-## Database: MySQL
-
-MySQL is the official database for this project. SQLite is kept only as a local fallback for testing when MySQL is not available.
-
-The database contains:
-
-- `customers` - one record for each customer identifier
-- `loans` - loan applications linked to customers through `customer_id`
-
-The schema supports one customer having many loans. In the supplied CSV, the original `id` and `member_id` values are empty, so the ETL creates surrogate IDs. As a result, this particular file currently has one generated customer ID per loan.
-
-### 1. Create the database tables
-
-Open MySQL Workbench and run:
-
-```sql
-SOURCE D:/Documents/Fintech/MICRO-LENDING PLATFORM - End-to-End FinTech Capstone Project/sql/schema.sql;
+```text
+data/processed/loan.csv
 ```
 
-Or run from a MySQL terminal:
+> The raw source file is intentionally not committed to GitHub due to its large size.
 
-```bash
-mysql -u your_user -p < sql/schema.sql
+## What We Built
+
+The project creates a complete lending-risk workflow:
+
+- data cleaning and feature preparation
+- processed customer and loan data tables
+- SQL queries for business analysis
+- default prediction model
+- configurable risk scoring and risk band mapping
+- policy-based eligibility rules
+- final approval/review/rejection decision logic
+- API and UI to interact with the model
+
+## End-to-End Workflow
+
+![Project workflow](docs/assets/decision_pipeline.png)
+
+```text
+Raw lending data
+  -> ETL and data validation
+  -> processed customer and loan tables
+  -> SQL business analysis
+  -> feature engineering
+  -> default prediction model
+  -> risk score and risk band
+  -> eligibility rules
+  -> approval / review / rejection decision
+  -> API and Streamlit UI
 ```
 
-### 2. Configure the Python connection
+## Risk Logic and Formulas
 
-Set the connection string in your terminal. Do not place the password in source code or commit it to the project.
+### 1. Loan-to-income ratio
 
-PowerShell example:
+The project calculates loan-to-income as:
+
+$$
+\text{Loan-to-Income} = \frac{\text{Loan Amount}}{\text{Annual Income}}
+$$
+
+This is used to check whether the borrower is taking on too much debt relative to income.
+
+### 2. Default probability to risk score
+
+The default probability is converted to a 0-100 score using:
+
+$$
+\text{Risk Score} = \text{round}(\text{Default Probability} \times 100)
+$$
+
+Example:
+
+- default probability = 0.55
+- risk score = round(0.55 × 100) = 55
+
+### 3. Risk bands
+
+The risk score is mapped into business-friendly bands:
+
+- < 25 = Low Risk
+- < 50 = Medium Risk
+- < 75 = High Risk
+- > = 75 = Very High Risk
+
+### 4. Eligibility checks
+
+Eligibility is not based on the model alone. Borrowers are also rejected if they violate practical lending rules such as:
+
+- income below minimum threshold
+- loan-to-income too high
+- DTI too high
+- credit utilization too high
+- employment length too low
+- FICO below threshold
+- delinquency history too severe
+- too many recent inquiries
+- model probability too high
+
+
+## Decision Outputs
+
+The project distinguishes between approval, review, and rejection states based on risk score, business rules, and eligibility checks.
+
+### Input form example
+
+![Loan form example](docs/assets/Output%20pic1.png)
+
+### Decision result example
+
+![Decision result example](docs/assets/Output%20pic2.png)
+
+## Repository Structure
+
+```text
+.
+├── api/
+│   └── app.py
+├── app/
+│   └── streamlit_app.py
+├── data/
+│   ├── processed/
+│   │   ├── loan.csv
+│   │   ├── customers.csv
+│   │   └── loans.csv
+│   └── eda/
+├── docs/
+│   ├── assets/
+│   ├── business_problem.md
+│   ├── dataset_dictionary.md
+│   ├── er_diagram.md
+│   ├── feature_catalog.md
+│   ├── final_project_report.md
+│   ├── project_documentation.md
+│   ├── project_roadmap.md
+│   ├── requirement_classification.md
+│   └── system_architecture.md
+├── models/
+│   └── default_model.joblib
+├── scripts/
+│   └── generate_visual_assets.py
+├── sql/
+│   ├── business_queries.sql
+│   └── schema.sql
+├── src/
+│   ├── decision_engine.py
+│   ├── eda_analysis.py
+│   ├── eligibility.py
+│   ├── etl_pipeline.py
+│   ├── features.py
+│   ├── risk_score.py
+│   ├── train_model.py
+│   └── ...
+├── tests/
+├── .gitignore
+├── PROJECT_GUIDE.md
+├── README.md
+├── requirements.txt
+├── pytest.ini
+└── .git/
+```
+
+## How to Run the Project
+
+### 1. Install dependencies
 
 ```powershell
-$env:MICRO_LENDING_MYSQL_URL = 'mysql+pymysql://your_user:your_password@localhost:3306/micro_lending'
+pip install -r requirements.txt
 ```
 
-The password is not stored anywhere in this repository.
-
-### 3. Load the processed data
-
-The processed CSV files already exist. To load them into MySQL:
-
-```powershell
-python -c "from src.database import load_processed_tables_to_database, MYSQL_DATABASE_URL; load_processed_tables_to_database(MYSQL_DATABASE_URL)"
-```
-
-The loader checks existing MySQL row counts before inserting. It will not blindly append the same full dataset again.
-
-## Testing MySQL in Workbench
-
-Run these checks in MySQL Workbench:
-
-```sql
-USE micro_lending;
-
-SELECT COUNT(*) AS customers FROM customers;
-SELECT COUNT(*) AS loans FROM loans;
-SELECT COUNT(DISTINCT customer_id) AS distinct_loan_customers FROM loans;
-
-SELECT COUNT(*) AS duplicate_customers
-FROM (
-    SELECT customer_id
-    FROM customers
-    GROUP BY customer_id
-    HAVING COUNT(*) > 1
-) AS duplicates;
-
-SELECT COUNT(*) AS orphan_loans
-FROM loans l
-LEFT JOIN customers c ON c.customer_id = l.customer_id
-WHERE c.customer_id IS NULL;
-
-SHOW INDEX FROM customers;
-SHOW INDEX FROM loans;
-```
-
-Expected current data checks:
-
-- customers: `2,260,668`
-- loans: `2,260,668`
-- distinct loan customers: `2,260,668`
-- duplicate customers: `0`
-- orphan loans: `0`
-
-Then run the six reports from [sql/business_queries.sql](sql/business_queries.sql). They are:
-
-1. Default rate by grade
-2. High-risk borrowers
-3. Approval readiness by state
-4. Customer debt burden
-5. High-risk loans for manual review
-6. Default risk by loan purpose
-
-The detailed reports intentionally use `LIMIT 1000` so Workbench and future dashboards do not try to display millions of rows.
-
-## Testing the Python project
-
-From the project root:
-
-```powershell
-python -m pytest -q
-python -m compileall -q src api app
-```
-
-The test suite checks ETL, ID handling, feature engineering, database fallback loading, EDA output creation, risk scoring, eligibility, decision logic, API validation, and the six-query contract.
-
-## Testing the API
-
-Start the API in one terminal:
+### 2. Start the FastAPI backend
 
 ```powershell
 python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 ```
 
-Open the API documentation in a browser:
+Open the API docs here:
 
 - http://127.0.0.1:8000/docs
 
-Or test from a second PowerShell terminal:
-
-```powershell
-$headers = @{ 'Content-Type' = 'application/json' }
-$body = '{"applicant":{"annual_inc":120000,"emp_length":8,"revol_util":0.2,"delinq_2yrs":0,"inq_last_6mths":0,"fico_range_low":760},"loan":{"loan_amnt":10000,"dti":10}}'
-
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/' -Method Get
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/risk-score' -Method Post -Headers $headers -Body $body
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/eligibility' -Method Post -Headers $headers -Body $body
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/loan-decision' -Method Post -Headers $headers -Body $body
-```
-
-The final response should include the default probability, risk score, risk band, eligibility, decision, and reasons.
-
-Stop the API with `Ctrl+C` in the terminal running Uvicorn.
-
-## Testing the Streamlit form
-
-Start Streamlit in another terminal:
+### 3. Start the Streamlit app
 
 ```powershell
 python -m streamlit run app/streamlit_app.py --server.address 127.0.0.1 --server.port 8501
@@ -208,55 +235,63 @@ Open:
 
 - http://127.0.0.1:8501
 
-Enter values such as:
+### 4. Run the automated tests
 
-- Annual income: `120000`
-- Employment length: `8`
-- Revolving utilization: `0.20`
-- Delinquencies: `0`
-- Recent inquiries: `0`
-- FICO low: `760`
-- Loan amount: `10000`
-- DTI: `10`
+```powershell
+python -m pytest -q
+```
 
-Click **Evaluate Loan**. The form displays the model result, risk score, risk band, eligibility result, final decision, and reasons.
-
-Stop Streamlit with `Ctrl+C` in its terminal.
-
-## Rebuilding generated outputs
-
-Run ETL only when you intentionally want to regenerate the processed CSVs:
+### 5. Regenerate ETL outputs and analytics
 
 ```powershell
 python -m src.etl_pipeline
-```
-
-Generate EDA files:
-
-```powershell
 python -m src.eda_analysis --sample-size 50000
 ```
 
-Run the local SQLite fallback and six reports:
-
-```powershell
-python -m src.database
-python -m src.run_business_queries
-```
-
-Retrain the model only when you intentionally want a new model artifact:
+### 6. Retrain the model when needed
 
 ```powershell
 python -m src.train_model
 ```
 
-## Main project decisions
+## Example Input and Output
 
-- Default statuses: `Charged Off`, `Default`, `Late (31-120 days)`, and `Late (16-30 days)`.
-- Non-default statuses include `Fully Paid`, `Current`, and `In Grace Period`.
-- Risk score is the model default probability expressed on a 0-100 scale.
-- Eligibility and risk are separate: a borrower can have a low model score but still fail a business rule.
-- The model uses application-time information and does not use repayment or recovery outcomes as prediction features.
+Example applicant values:
+
+- annual income: 120000
+- employment length: 8 years
+- revolving utilization: 0.20
+- delinquencies: 0
+- inquiries: 0
+- FICO low: 760
+- requested loan: 10000
+- DTI: 10
+
+This type of borrower is usually a strong credit candidate and can be approved if policy checks also pass.
+
+## Documentation
+
+Additional project documentation is available in:
+
+- [docs/business_problem.md](docs/business_problem.md)
+- [docs/project_documentation.md](docs/project_documentation.md)
+- [PROJECT_GUIDE.md](PROJECT_GUIDE.md)
+
+## Notes
+
+This project is intended as a capstone-style, practical lending-risk system and is a good learning framework for:
+
+- financial analytics
+- risk modeling
+- explainable AI in lending
+- backend/frontend integration
+- end-to-end ML application design
+
+It is not a production credit decision system without additional compliance review, policy validation, and model governance.
+
+## License
+
+This project is for educational and demonstration purposes.
 
 ## Current status
 

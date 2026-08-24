@@ -6,8 +6,26 @@ from typing import Iterable
 import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-RAW_CSV = ROOT_DIR / 'lendingLoan zip' / 'loan.csv'
 PROCESSED_DIR = ROOT_DIR / 'data' / 'processed'
+
+
+def find_raw_csv() -> Path:
+    """Locate the Lending Club CSV regardless of whether it is named loan.csv or loans.csv."""
+    candidates = [
+        ROOT_DIR / 'lendingLoan zip' / 'loan.csv',
+        ROOT_DIR / 'lendingLoan zip' / 'loans.csv',
+        ROOT_DIR / 'loan.csv',
+        ROOT_DIR / 'loans.csv',
+        ROOT_DIR / 'data' / 'processed' / 'loan.csv',
+        ROOT_DIR / 'data' / 'processed' / 'loans.csv',
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        'Could not find the Lending Club CSV. Expected a file named loan.csv or loans.csv in '
+        'the project root or under the lendingLoan zip folder.'
+    )
 
 
 def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -112,7 +130,8 @@ def build_loan_table(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_raw_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
-    raw = pd.read_csv(RAW_CSV, low_memory=False)
+    raw_path = find_raw_csv()
+    raw = pd.read_csv(raw_path, low_memory=False)
     df = standardize_columns(raw)
     df = build_default_flag(df)
 
